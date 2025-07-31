@@ -10,11 +10,18 @@
         </div>
 
         <!-- Login Form -->
-        <form>
-          <input type="text" id="login" class="fadeIn second" name="login" placeholder="Email">
-          <input type="password" id="password" class="fadeIn third" name="login" placeholder="Password">
+        <form v-on:submit.prevent="login">
+          <input type="text" id="login" class="fadeIn second" name="login" placeholder="Email" v-model="email" required>
+          <input type="password" id="password" class="fadeIn third" name="login" placeholder="Password"
+            v-model="password" required>
           <input type="submit" class="fadeIn fourth" value="Log In">
         </form>
+
+        <div v-if="error" class="error-message">
+          <v-alert dense outlined type="error">
+            {{ errorMessage }}
+          </v-alert>
+        </div>
 
         <!-- Remind Passowrd -->
         <div id="formFooter">
@@ -25,6 +32,61 @@
     </div>
   </div>
 </template>
+
+<script>
+import axios from 'axios';
+export default {
+  name: 'LoginView',
+  comments: {
+    // Aquí puedes importar los componentes necesarios, si los hubiera
+    axios
+  },
+  data() {
+    return {
+      // Aquí puedes definir las propiedades reactivas necesarias para el login
+      email: "",
+      password: "",
+      error: false,
+      errorMessage: ""
+    };
+  },
+  methods: {
+    // Aquí puedes definir los métodos necesarios para manejar el login
+    login() {
+      let userDto = {
+        email: this.email,
+        password: this.password
+      };
+
+      console.log(`Email: ${userDto.email}, Password: ${userDto.password}`);
+
+      // Aquí puedes hacer la llamada a la API para autenticar al usuario
+      axios.post("https://localhost:7077/api/user/login", userDto)
+        .then((response) => {
+          console.log(response);
+
+          if (response.data) {
+            // Si la respuesta es exitosa, guardar el token en localStorage
+            localStorage.setItem("accessToken", response.data.accessToken);
+            localStorage.setItem("refreshToken", response.data.refreshToken);
+            // Redirigir al usuario a la vista principal o donde sea necesario
+            this.$router.push({ name: 'home' });
+          } else {
+            this.error = true;
+            this.errorMessage = "Login failed. Please check your credentials.";
+          }
+
+        }).catch((error) => {
+          console.error("Error during login:", error);
+          this.error = true;
+          // Manejar el error de login, por ejemplo, mostrar un mensaje al usuario
+          this.errorMessage = "Login failed. Please try again later.";
+          //this.errorMessage = error.response.data;
+        });
+    }
+  },
+};
+</script>
 
 <style scoped>
 body {
@@ -69,8 +131,8 @@ h2 {
 }
 
 #formContent {
-  -webkit-border-radius: 10px 10px 10px 10px;
-  border-radius: 10px 10px 10px 10px;
+  -webkit-border-radius: 0.625rem 0.625rem 0.625rem 0.625rem;
+  border-radius: 0.625rem 0.625rem 0.625rem 0.625rem;
   background: #fff;
   padding: 30px;
   width: 90%;
@@ -114,17 +176,17 @@ input[type=reset] {
   background-color: #56baed;
   border: none;
   color: white;
-  padding: 15px 80px;
+  padding: 0.9375rem 5rem;
   text-align: center;
   text-decoration: none;
   display: inline-block;
   text-transform: uppercase;
-  font-size: 13px;
+  font-size: 0.8125rem;
   -webkit-box-shadow: 0 10px 30px 0 rgba(95, 186, 233, 0.4);
   box-shadow: 0 10px 30px 0 rgba(95, 186, 233, 0.4);
-  -webkit-border-radius: 5px 5px 5px 5px;
-  border-radius: 5px 5px 5px 5px;
-  margin: 5px 20px 40px 20px;
+  -webkit-border-radius: 0.3125rem 0.3125rem 0.3125rem 0.3125rem;
+  border-radius: 0.3125rem 0.3125rem 0.3125rem 0.3125rem;
+  margin: 0.3125rem 1.25rem 1.25rem 1.25rem;
   -webkit-transition: all 0.3s ease-in-out;
   -moz-transition: all 0.3s ease-in-out;
   -ms-transition: all 0.3s ease-in-out;
@@ -326,5 +388,14 @@ input[type=password]:placeholder {
   width: 20%;
   margin: 0.625rem 0rem;
   padding: 0.625rem;
+}
+
+/* ERRORS */
+.error-message {
+  color: red;
+  margin: 10px 0rem;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
 }
 </style>
