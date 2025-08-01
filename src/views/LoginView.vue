@@ -11,9 +11,22 @@
 
         <!-- Login Form -->
         <form v-on:submit.prevent="login">
-          <input type="text" id="login" class="fadeIn second" name="login" placeholder="Email" v-model="email" required>
-          <input type="password" id="password" class="fadeIn third" name="login" placeholder="Password"
-            v-model="password" required>
+          <div class="input-wrapper" :class="{ 'input-error-active': emailTouched && !email }">
+            <input type="text" id="login" class="fadeIn second" name="login" placeholder="Email" v-model="email"
+              @blur="emailTouched = true" />
+          </div>
+          <div v-if="emailTouched && !email" class="input-error-message">
+            El correo es obligatorio.
+          </div>
+
+          <!-- Contraseña -->
+          <div class="input-wrapper" :class="{ 'input-error-active': passwordTouched && !password }">
+            <input type="password" id="password" class="fadeIn third" name="login" placeholder="Password"
+              v-model="password" @blur="passwordTouched = true" />
+          </div>
+          <div v-if="passwordTouched && !password" class="input-error-message">
+            La contraseña es obligatoria.
+          </div>
           <input type="submit" class="fadeIn fourth" value="Log In">
         </form>
 
@@ -47,7 +60,9 @@ export default {
       email: "",
       password: "",
       error: false,
-      errorMessage: ""
+      errorMessage: "",
+      emailTouched: false,
+      passwordTouched: false
     };
   },
   methods: {
@@ -63,12 +78,12 @@ export default {
       // Aquí puedes hacer la llamada a la API para autenticar al usuario
       axios.post("https://localhost:7077/api/user/login", userDto)
         .then((response) => {
+          console.log("respuesta ");
           console.log(response);
 
           if (response.data) {
             // Si la respuesta es exitosa, guardar el token en localStorage
-            localStorage.setItem("accessToken", response.data.accessToken);
-            localStorage.setItem("refreshToken", response.data.refreshToken);
+            localStorage.setItem("token", response.data.token);
             // Redirigir al usuario a la vista principal o donde sea necesario
             this.$router.push({ name: 'home' });
           } else {
@@ -243,7 +258,86 @@ input[type=password]:placeholder {
   color: #cccccc;
 }
 
+/* Quitamos el borde rojo directo al input */
+.input-error {
+  background-color: #fff;
+  position: relative;
+  border-bottom: 2px solid transparent;
+}
 
+/* Línea roja animada al estilo underlineHover */
+.input-error::after {
+  content: "";
+  display: block;
+  position: absolute;
+  bottom: 0;
+  left: 7.5%;
+  /* Igual que el padding para alinear */
+  width: 80%;
+  height: 2px;
+  background-color: red;
+  transform: scaleX(0);
+  transition: transform 0.3s ease-in-out;
+  transform-origin: left;
+}
+
+.input-error:focus::after,
+.input-error:valid::after {
+  transform: scaleX(0);
+  /* Si el campo está bien, ocultamos */
+}
+
+.input-error.input-error-active::after {
+  transform: scaleX(1);
+  /* Mostrar la línea roja */
+}
+
+.input-wrapper {
+  position: relative;
+  width: 85%;
+  /* igual que antes, pero aquí */
+  margin: 5px auto;
+}
+
+.input-wrapper input {
+  width: 100%;
+  /* ahora ocupa todo el contenedor */
+  padding: 15px 32px;
+  border: none;
+  background-color: #f6f6f6;
+  border-radius: 5px;
+  font-size: 16px;
+  text-align: center;
+  transition: all 0.5s ease-in-out;
+}
+
+.input-wrapper::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  background-color: rgb(250, 77, 77);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease-in-out;
+}
+
+.input-error-active::after {
+  transform: scaleX(1);
+}
+
+.input-error-message {
+  color: red;
+  font-size: 0.875rem;
+  margin-top: 4px;
+  margin-bottom: 10px;
+  text-align: left;
+  margin-left: auto;
+  margin-right: auto;
+  width: 85%;
+}
 
 /* ANIMATIONS */
 
