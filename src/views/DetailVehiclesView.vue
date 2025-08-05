@@ -4,7 +4,6 @@
         <app-bar @toggle-drawer="drawer = !drawer" @goToSettings="goTo('settings')"
             @changeCompany="goTo('switch-company')" @logout="logout" />
         <v-main>
-            <!-- Tu contenido aquí -->
             <v-container>
                 <dashboard-table />
             </v-container>
