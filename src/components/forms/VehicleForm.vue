@@ -1,5 +1,5 @@
 <template>
-    <v-dialog v-model="dialog" max-width="600px" persistent>
+    <v-dialog :value="show" @input="close" max-width="600px" persistent>
         <v-card>
             <v-card-title>
                 <span class="headline">{{ editMode ? 'Editar Vehículo' : 'Crear Vehículo' }}</span>
@@ -30,101 +30,71 @@ import axios from '@/utils/axios'
 export default {
     name: 'VehicleForm',
     props: {
-        vehicle: {
-            type: Object,
-            default: () => null
-        },
-        editMode: {
-            type: Boolean,
-            default: false
-        },
-        show: {
-            type: Boolean,
-            required: true
-        }
+        vehicle: Object,
+        editMode: Boolean,
+        show: Boolean,
     },
     data() {
         return {
-            dialog: this.show,
             formData: {
                 matricula: '',
                 marca: '',
                 modelo: '',
-                tipoCombustible: ''
+                tipoCombustible: '',
             },
             formValid: false,
             rules: {
-                required: v => !!v || 'Este campo es obligatorio'
+                required: v => !!v || 'Este campo es obligatorio',
             },
             combustibles: [
                 { label: 'Gasolina sin plomo', value: 'Gasolina sin plomo' },
                 { label: 'Gasoil', value: 'Gasoil' },
-            ]
+            ],
         }
     },
     watch: {
         show(val) {
-            this.dialog = val
             if (val) this.initializeForm()
         },
-        // dialog(val) {
-        //     if (!val) this.$emit('close')
-        // }
     },
     methods: {
         initializeForm() {
-            if (this.editMode && this.vehicle) {
-                // Protección contra datos faltantes
-                this.formData = {
-                    matricula: this.vehicle.matricula || '',
-                    marca: this.vehicle.marca || '',
-                    modelo: this.vehicle.modelo || '',
-                    tipoCombustible: this.validateCombustible(this.vehicle.tipoCombustible) || ''
-                }
-            } else {
-                this.formData = {
-                    matricula: '',
-                    marca: '',
-                    modelo: '',
-                    tipoCombustible: ''
-                }
-            }
-        },
-        async submitForm() {
-            try {
-                let valid = this.$refs.form.validate()
-                if (!valid) return
+            let veh = this.vehicle || {}
+            console.log('Initializing form with vehicle:', veh);
 
-                const token = localStorage.getItem('token')
-                const config = { headers: { Authorization: `Bearer ${token}` } }
-
-                if (this.editMode) {
-                    await axios.put(`/vehicle`, this.formData, config)
-                } else {
-                    await axios.post(`/vehicle`, this.formData, config)
-                }
-
-                this.$emit('saved')
-                this.close()
-            } catch (error) {
-                console.error('Error al guardar vehículo:', error)
-                this.$emit('error', 'Error al guardar el vehículo')
+            this.formData = {
+                matricula: veh.matricula || '',
+                marca: veh.marca || '',
+                modelo: veh.modelo || '',
+                tipoCombustible: this.validateCombustible(veh.tipoCombustible),
             }
         },
         validateCombustible(tipo) {
             const valid = this.combustibles.map(c => c.value)
             return valid.includes(tipo) ? tipo : ''
         },
-        close() {
-            this.formData = {
-                matricula: '',
-                marca: '',
-                modelo: '',
-                tipoCombustible: ''
+        async submitForm() {
+            if (!this.$refs.form.validate()) return
+            try {
+                const token = localStorage.getItem('token')
+                const config = { headers: { Authorization: `Bearer ${token}` } }
+
+                if (this.editMode) {
+                    await axios.put('/vehicle', this.formData)
+                } else {
+                    await axios.post('/vehicle', this.formData, config)
+                }
+
+                this.$emit('saved')
+                this.close()
+            } catch (err) {
+                console.error('Error al guardar vehículo:', err)
+                this.$emit('error', 'Error al guardar el vehículo')
             }
-            this.dialog = false
-            this.$emit('close');
-        }
-    }
+        },
+        close() {
+            this.$emit('close')
+        },
+    },
 }
 </script>
