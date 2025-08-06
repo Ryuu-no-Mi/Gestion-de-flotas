@@ -8,10 +8,15 @@
             <v-card-text>
                 <v-form ref="form" v-model="formValid">
                     <v-text-field v-model="formData.matricula" label="Matrícula" :rules="[rules.required]" />
-                    <v-text-field v-model="formData.marca" label="Marca" :rules="[rules.required]" />
-                    <v-text-field v-model="formData.modelo" label="Modelo" :rules="[rules.required]" />
-                    <v-select v-model="formData.tipoCombustible" :items="combustibles" label="Combustible"
-                        :rules="[rules.required]" item-text="label" item-value="value" />
+                    <v-select v-model.number="formData.brand" :items="brands" item-text="label" item-value="value"
+                        label="Marca" :rules="[rules.required]" />
+
+                    <v-select v-model.number="formData.model" :items="models" item-text="label" item-value="value"
+                        label="Modelo" :rules="[rules.required]" />
+
+                    <v-select v-model.number="formData.typeFuel" :items="typesFuel" item-text="label" item-value="value"
+                        label="Combustible" :rules="[rules.required]" />
+
                 </v-form>
             </v-card-text>
 
@@ -38,25 +43,28 @@ export default {
         return {
             formData: {
                 matricula: '',
-                marca: '',
-                modelo: '',
-                tipoCombustible: '',
+                brand: 0,
+                model: 0,
+                typeFuel: 0,
             },
             formValid: false,
             rules: {
                 required: v => !!v || 'Este campo es obligatorio',
             },
-            combustibles: [
-                { label: 'Gasolina sin plomo', value: 'Gasolina sin plomo' },
-                { label: 'Gasoil', value: 'Gasoil' },
-            ],
+            brands: [],
+            models: [],
+            typesFuel: [],
+
+
         }
     },
     watch: {
         show(val) {
             if (val) this.initializeForm()
+            this.getKeyForm()
         },
     },
+
     methods: {
         initializeForm() {
             let veh = this.vehicle || {}
@@ -64,38 +72,100 @@ export default {
 
             this.formData = {
                 matricula: veh.matricula || '',
-                marca: veh.marca || '',
-                modelo: veh.modelo || '',
-                tipoCombustible: this.validateCombustible(veh.tipoCombustible),
+                brand: veh.marcaId || '',
+                model: veh.modeloId || '',
+                typeFuel: veh.tipoCombustibleId || '',
             }
+
+            console.log('Asignando marca:', veh.marcaId, 'o', veh.marca)
+            console.log('formData.brand:', this.formData.brand)
+            console.log('brands:', this.brands)
+
+
         },
-        validateCombustible(tipo) {
-            const valid = this.combustibles.map(c => c.value)
-            return valid.includes(tipo) ? tipo : ''
-        },
+
         async submitForm() {
             if (!this.$refs.form.validate()) return
-            try {
-                const token = localStorage.getItem('token')
-                const config = { headers: { Authorization: `Bearer ${token}` } }
 
+            try {
                 if (this.editMode) {
                     await axios.put('/vehicle', this.formData)
                 } else {
-                    await axios.post('/vehicle', this.formData)
+
+                    const payload = {
+                        matricula: this.formData.matricula,
+                        marcaId: this.formData.brand,        // 👈 aquí el cambio, no tenia los mismo nombre 
+                        modeloId: this.formData.model,
+                        tipoCombustibleId: this.formData.typeFuel,
+                    }
+                    await axios.post('/vehicle', payload)
+
                 }
 
                 this.$emit('saved')
                 this.close()
             } catch (err) {
+                console.log(typeof this.formData.brand, this.formData.brand)
+                console.log(typeof this.formData.model, this.formData.model)
+                console.log(typeof this.formData.typeFuel, this.formData.typeFuel)
                 console.error('Error al guardar vehículo:', err)
                 this.$emit('error', 'Error al guardar el vehículo')
             }
         },
-        //crear getEmpresaIdFrom
+        async getBrands() {
+            //ya tiene el token  en axios.js
+            try {
+                const response = await axios.get("/brand")
+                console.log("Respuesta de marcas:", response.data)
+                this.brands = response.data.map(brand => ({
+                    label: brand.nombre,
+                    value: brand.id
+                }))
+                console.log("Marcas obtenidas:", this.brands)
+            } catch (error) {
+                console.error("Error al obtener marcas:", error)
+            }
+
+
+        },
+        async getModels() {
+            try {
+                const response = await axios.get("/model")
+                this.models = response.data.map(model => ({
+                    label: model.nombre,
+                    value: model.id
+                }))
+                console.log("Modelos obtenidos:", this.models)
+            } catch (error) {
+                console.error("Error al obtener modelos:", error)
+            }
+        },
+        async getTypesFuel() {
+            try {
+                const response = await axios.get("/typefuel")
+                this.typesFuel = response.data.map(type => ({
+                    label: type.nombre,
+                    value: type.id
+                }))
+                console.log("Tipos de combustible obtenidos:", this.typesFuel)
+            } catch (error) {
+                console.error("Error al obtener tipos de combustible:", error)
+            }
+        },
+        getKeyForm() {
+            const token = localStorage.getItem('token')
+            if (!token) {
+                console.warn("No hay token. Evitando llamadas innecesarias.")
+                return
+            }
+
+            this.getBrands()
+            this.getModels()
+            this.getTypesFuel()
+        },
         close() {
             this.$emit('close')
         },
-    },
+    }
 }
 </script>

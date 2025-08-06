@@ -24,7 +24,11 @@ instance.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       console.warn('Token inválido o expirado')
       localStorage.removeItem('token')
-      router.push({ name: 'login' })
+
+      if (router.currentRoute.path !== '/login') {
+        router.push({ name: 'login' })
+      }
+      
     }
     return Promise.reject(error)
   }
