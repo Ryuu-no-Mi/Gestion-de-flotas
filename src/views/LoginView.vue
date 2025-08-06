@@ -78,7 +78,7 @@ export default {
       // Aquí puedes hacer la llamada a la API para autenticar al usuario
       axios.post("https://localhost:7077/api/user/login", userDto)
         .then((response) => {
-          console.log("respuesta ");
+          console.log("Respuesta de la peticion::::::");
           console.log(response);
 
           if (response.data) {

@@ -82,7 +82,7 @@ export default {
                 if (this.editMode) {
                     await axios.put('/vehicle', this.formData)
                 } else {
-                    await axios.post('/vehicle', this.formData, config)
+                    await axios.post('/vehicle', this.formData)
                 }
 
                 this.$emit('saved')
@@ -92,6 +92,7 @@ export default {
                 this.$emit('error', 'Error al guardar el vehículo')
             }
         },
+        //crear getEmpresaIdFrom
         close() {
             this.$emit('close')
         },
