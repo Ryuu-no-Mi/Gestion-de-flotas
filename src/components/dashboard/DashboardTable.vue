@@ -1,9 +1,6 @@
 <template>
     <div>
 
-
-
-
         <v-data-table :headers="headers" :items="vehicles" item-key="matricula" class="elevation-2 text-center"
             :custom-filter="filterOnlyCapsText">
 
@@ -162,9 +159,26 @@ export default {
         },
     },
     watch: {
-        'filters.brandId': 'fetchVehicles',
-        'filters.modelId': 'fetchVehicles',
-        'filters.fuelId': 'fetchVehicles'
+        'filters.brandId'(newBrandId) {
+            this.filters.modelId = null
+
+            if (newBrandId) {
+                // Filtra modelos a partir de los vehículos disponibles
+                const modelosFiltrados = this.vehicles
+                    .filter(v => v.marcaId === newBrandId)
+                    .map(v => ({
+                        label: v.modelo,
+                        value: v.modeloId
+                    }))
+
+                // Quita duplicados
+                const unicos = new Map()
+                modelosFiltrados.forEach(m => unicos.set(m.value, m))
+                this.models = Array.from(unicos.values())
+            } else {
+                this.getModels() // Recarga todos los modelos si se limpia la marca
+            }
+        }
     },
     methods: {
         async fetchVehicles() {

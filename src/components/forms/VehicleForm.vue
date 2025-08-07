@@ -53,6 +53,7 @@ export default {
             },
             brands: [],
             models: [],
+            filteredModels: [],     // Modelos según la marca seleccionada -- NO SE SI EN EL CREATE, EL MODELO TAMBIEN DEPENDE DE LA MARCA COMO EN EL EDIT
             typesFuel: [],
 
 
