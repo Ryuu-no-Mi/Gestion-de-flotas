@@ -88,16 +88,19 @@ export default {
             if (!this.$refs.form.validate()) return
 
             try {
-                if (this.editMode) {
-                    await axios.put('/vehicle', this.formData)
-                } else {
+                let payload = {
+                    matricula: this.formData.matricula,
+                    marcaId: this.formData.brand,
+                    modeloId: this.formData.model,
+                    tipoCombustibleId: this.formData.typeFuel,
+                }
 
-                    const payload = {
-                        matricula: this.formData.matricula,
-                        marcaId: this.formData.brand,        // 👈 aquí el cambio, no tenia los mismo nombre 
-                        modeloId: this.formData.model,
-                        tipoCombustibleId: this.formData.typeFuel,
-                    }
+                if (this.editMode) {
+                    payload.id = this.vehicle.id
+                    console.log('Actualizando vehículo con payload:', payload);
+                    await axios.put(`/vehicle/${this.vehicle.id}`, payload)
+                } else {
+                    console.log('Creando nuevo vehículo:', payload);
                     await axios.post('/vehicle', payload)
 
                 }
@@ -105,9 +108,6 @@ export default {
                 this.$emit('saved')
                 this.close()
             } catch (err) {
-                console.log(typeof this.formData.brand, this.formData.brand)
-                console.log(typeof this.formData.model, this.formData.model)
-                console.log(typeof this.formData.typeFuel, this.formData.typeFuel)
                 console.error('Error al guardar vehículo:', err)
                 this.$emit('error', 'Error al guardar el vehículo')
             }

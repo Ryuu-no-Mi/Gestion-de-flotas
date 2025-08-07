@@ -1,12 +1,45 @@
 <template>
     <div>
+
+
+
+
         <v-data-table :headers="headers" :items="vehicles" item-key="matricula" class="elevation-2 text-center"
-            :search="search" :custom-filter="filterOnlyCapsText">
+            :custom-filter="filterOnlyCapsText">
+
             <template v-slot:top>
-                <div class="d-flex justify-center">
-                    <v-text-field v-model="search" label="Buscar (MAYÚSCULAS)" class="search-bar" hide-details />
-                </div>
+                <v-row class="px-4 pb-4" dense>
+                    <v-col cols="12" sm="4">
+                        <v-select v-model="filters.brandId" :items="brands" item-text="label" item-value="value"
+                            label="Filtrar por Marca" clearable />
+                    </v-col>
+                    <v-col cols="12" sm="4">
+                        <v-select v-model="filters.modelId" :items="models" item-text="label" item-value="value"
+                            label="Filtrar por Modelo" clearable />
+                    </v-col>
+                    <v-col cols="12" sm="4">
+                        <v-select v-model="filters.fuelId" :items="typesFuel" item-text="label" item-value="value"
+                            label="Filtrar por Combustible" clearable />
+                    </v-col>
+                </v-row>
+                <v-row class="px-4 pb-4" dense>
+                    <v-col cols="10">
+                        <v-text-field v-model="search" label="Buscar por texto" hide-details clearable />
+                    </v-col>
+                    <v-col cols="2">
+                        <v-btn color="primary" class="mt-2 w-100" @click="fetchVehicles">
+                            Buscar
+                            <v-icon right>mdi-magnify</v-icon>
+                        </v-btn>
+                        <v-btn color="grey" class="mt-2 w-100" @click="clearFilters">
+                            Limpiar
+                            <v-icon right>mdi-filter-remove</v-icon>
+                        </v-btn>
+                    </v-col>
+
+                </v-row>
             </template>
+
 
 
             <!-- Mostrar "-" si falta la matrícula -->
@@ -76,6 +109,11 @@
         <vehicle-form :show="showForm" :vehicle="selectedVehicle" :editMode="isEditMode" @close="showForm = false"
             @saved="fetchVehicles" />
 
+        <confirm-dialog :value="confirmDeleteDialog"
+            :message="`¿Deseas eliminar el vehículo con matrícula ${vehicleToDelete?.matricula}?`"
+            title="Confirmar Eliminación" @confirm="confirmDelete" @cancel="cancelDelete" />
+
+
     </div>
 </template>
 
@@ -83,10 +121,12 @@
 //import axios from 'axios'
 import axios from '@/utils/axios'
 import VehicleForm from '../forms/VehicleForm.vue'
+import ConfirmDialog from '@/components/dialog/ConfirmDialog.vue'
 
 export default {
     components: {
-        VehicleForm
+        VehicleForm,
+        ConfirmDialog
     },
     data() {
         return {
@@ -94,7 +134,20 @@ export default {
             vehicles: [],
             showForm: false,
             selectedVehicle: null,
-            isEditMode: false
+            isEditMode: false,
+            confirmDeleteDialog: false,
+            vehicleToDelete: null,
+
+            // Faltaban estas:
+            filters: {
+                brandId: null,
+                modelId: null,
+                fuelId: null
+            },
+            brands: [],
+            models: [],
+            typesFuel: []
+
         }
     },
     computed: {
@@ -108,20 +161,29 @@ export default {
             ]
         },
     },
+    watch: {
+        'filters.brandId': 'fetchVehicles',
+        'filters.modelId': 'fetchVehicles',
+        'filters.fuelId': 'fetchVehicles'
+    },
     methods: {
         async fetchVehicles() {
             try {
-
                 const token = localStorage.getItem('token')
                 if (!token) {
                     throw new Error('Token no encontrado')
                 }
+
                 console.log('Token:', token) // Verifica que el token se esté obteniendo correctamente;
 
                 const response = await axios.get('/vehicle/page', {
                     params: {
                         pageNumber: 1,
-                        pageSize: 10
+                        pageSize: 10,
+                        idMarca: this.filters.brandId,
+                        idModelo: this.filters.modelId,
+                        idTipoCombustible: this.filters.fuelId,
+                        matricula: this.search
                     }
                 })
                 this.vehicles = response.data.items
@@ -134,6 +196,18 @@ export default {
                 this.$emit('error', 'No se pudieron cargar los vehículos. Inténtalo de nuevo más tarde.')
             }
         },
+        async getBrands() {
+            const response = await axios.get('/brand')
+            this.brands = response.data.map(b => ({ label: b.nombre, value: b.id }))
+        },
+        async getModels() {
+            const response = await axios.get('/model')
+            this.models = response.data.map(m => ({ label: m.nombre, value: m.id }))
+        },
+        async getTypesFuel() {
+            const response = await axios.get('/typefuel')
+            this.typesFuel = response.data.map(t => ({ label: t.nombre, value: t.id }))
+        },
         // esto deberia ser una llamada al endpoint de la API
         filterOnlyCapsText(value, search, item) {
             return (
@@ -143,10 +217,29 @@ export default {
                 value.toString().toLocaleUpperCase().includes(search)
             )
         },
-        deleteVehicles(vehiculo) {
-            console.log('Borrar vehículo:', vehiculo)
+        deleteVehicles(vehicle) {
+            console.log('Borrar vehículo:', vehicle.marca, vehicle.modelo, vehicle.matricula)
             // Aquí puedes hacer el borrado lógico (por ejemplo, usando axios para llamar a tu API)
+            this.vehicleToDelete = vehicle
+            this.confirmDeleteDialog = true
         },
+        async confirmDelete() {
+            try {
+                await axios.delete(`/vehicle/${this.vehicleToDelete.id}`)
+                this.fetchVehicles()
+                this.vehicleToDelete = null
+            } catch (error) {
+                console.error('Error al eliminar vehículo:', error)
+                this.$emit('error', 'Error al eliminar el vehículo.')
+            }
+            this.vehicleToDelete = null
+            this.confirmDeleteDialog = false
+        },
+        cancelDelete() {
+            this.vehicleToDelete = null
+            this.confirmDeleteDialog = false
+        }
+        ,
 
         editVehicles(vehicle) {
             this.selectedVehicle = vehicle
@@ -157,9 +250,24 @@ export default {
             this.selectedVehicle = null
             this.isEditMode = false
             this.showForm = true
+        },
+        clearFilters() {
+            this.search = ''
+            this.filters = {
+                brandId: null,
+                modelId: null,
+                fuelId: null
+            }
+            this.fetchVehicles()
         }
+
     },
-    mounted() {
+    async mounted() {
+        await Promise.all([
+            this.getBrands(),
+            this.getModels(),
+            this.getTypesFuel()
+        ])
         this.fetchVehicles()
     },
 }
@@ -171,7 +279,7 @@ th.text-center {
 }
 
 .search-bar {
-    width: 80%;
-    max-width: 70rem;
+    width: 70%;
+    max-width: 75rem;
 }
 </style>
