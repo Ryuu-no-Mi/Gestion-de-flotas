@@ -73,12 +73,12 @@ export default {
         password: this.password
       };
 
-      console.log(`Email: ${userDto.email}, Password: ${userDto.password}`);
+      console.log(`Email: ${userDto.email} , Password: ${userDto.password}`);
 
       // Aquí puedes hacer la llamada a la API para autenticar al usuario
       axios.post("https://localhost:7077/api/user/login", userDto)
         .then((response) => {
-          console.log("respuesta ");
+          console.log("Respuesta de la peticion::::::");
           console.log(response);
 
           if (response.data) {
@@ -96,7 +96,6 @@ export default {
           this.error = true;
           // Manejar el error de login, por ejemplo, mostrar un mensaje al usuario
           this.errorMessage = "Login failed. Please try again later.";
-          //this.errorMessage = error.response.data;
         });
     }
   },
