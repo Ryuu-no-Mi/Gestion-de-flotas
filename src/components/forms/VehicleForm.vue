@@ -8,11 +8,13 @@
             <v-card-text>
                 <v-form ref="form" v-model="formValid">
                     <v-text-field v-model="formData.matricula" label="Matrícula" :rules="[rules.required]" />
+
                     <v-select v-model.number="formData.brand" :items="brands" item-text="label" item-value="value"
                         label="Marca" :rules="[rules.required]" />
 
-                    <v-select v-model.number="formData.model" :items="models" item-text="label" item-value="value"
-                        label="Modelo" :rules="[rules.required]" />
+                    <v-select v-model.number="formData.model" :items="filteredModels" item-text="label"
+                        item-value="value" label="Modelo" :rules="[rules.required]" :disabled="!formData.brand"
+                        no-data-text="Selecciona una marca primero" />
 
                     <v-select v-model.number="formData.typeFuel" :items="typesFuel" item-text="label" item-value="value"
                         label="Combustible" :rules="[rules.required]" />
@@ -43,9 +45,9 @@ export default {
         return {
             formData: {
                 matricula: '',
-                brand: 0,
-                model: 0,
-                typeFuel: 0,
+                brand: null,
+                model: null,
+                typeFuel: null,
             },
             formValid: false,
             rules: {
@@ -53,19 +55,25 @@ export default {
             },
             brands: [],
             models: [],
-            filteredModels: [],     // Modelos según la marca seleccionada -- NO SE SI EN EL CREATE, EL MODELO TAMBIEN DEPENDE DE LA MARCA COMO EN EL EDIT
             typesFuel: [],
 
 
         }
+    },
+    computed: {
+        // Filtra por marca seleccionada
+        filteredModels() {
+            if (!this.formData.brand) return []
+            return this.models.filter(m => m.idBrand === this.formData.brand)
+        },
     },
     watch: {
         show(val) {
             if (val) this.initializeForm()
             this.getKeyForm()
         },
-    },
 
+    },
     methods: {
         initializeForm() {
             let veh = this.vehicle || {}
@@ -73,9 +81,9 @@ export default {
 
             this.formData = {
                 matricula: veh.matricula || '',
-                brand: veh.marcaId || '',
-                model: veh.modeloId || '',
-                typeFuel: veh.tipoCombustibleId || '',
+                brand: veh.marcaId ?? null,
+                model: veh.modeloId ?? null,
+                typeFuel: veh.tipoCombustibleId ?? null,
             }
 
             console.log('Asignando marca:', veh.marcaId, 'o', veh.marca)
@@ -132,9 +140,11 @@ export default {
         async getModels() {
             try {
                 const response = await axios.get("/model")
+                console.log("Respuesta de modelos:", response.data)
                 this.models = response.data.map(model => ({
                     label: model.nombre,
-                    value: model.id
+                    value: model.id,
+                    idBrand: model.idMarca
                 }))
                 console.log("Modelos obtenidos:", this.models)
             } catch (error) {

@@ -11,8 +11,9 @@
                             label="Filtrar por Marca" clearable />
                     </v-col>
                     <v-col cols="12" sm="4">
-                        <v-select v-model="filters.modelId" :items="models" item-text="label" item-value="value"
-                            label="Filtrar por Modelo" clearable />
+                        <v-select v-model="filters.modelId" :items="filteredModels" item-text="label" item-value="value"
+                            label="Filtrar por Modelo" :disabled="!filters.brandId"
+                            no-data-text="Selecciona una marca primero" clearable />
                     </v-col>
                     <v-col cols="12" sm="4">
                         <v-select v-model="filters.fuelId" :items="typesFuel" item-text="label" item-value="value"
@@ -148,6 +149,14 @@ export default {
         }
     },
     computed: {
+        filteredModels() {
+            if (!this.filters.brandId) return []
+            // modelos ya traen idBrand => filtramos directo
+            const list = this.models.filter(m => m.idBrand === this.filters.brandId)
+            // por si el backend trae duplicados
+            const uniq = new Map(list.map(m => [m.value, m]))
+            return Array.from(uniq.values())
+        },
         headers() {
             return [
                 { text: 'Matrícula', value: 'matricula', sortable: false },
@@ -160,24 +169,9 @@ export default {
     },
     watch: {
         'filters.brandId'(newBrandId) {
+            // al cambiar marca, limpiamos el modelo seleccionado
             this.filters.modelId = null
-
-            if (newBrandId) {
-                // Filtra modelos a partir de los vehículos disponibles
-                const modelosFiltrados = this.vehicles
-                    .filter(v => v.marcaId === newBrandId)
-                    .map(v => ({
-                        label: v.modelo,
-                        value: v.modeloId
-                    }))
-
-                // Quita duplicados
-                const unicos = new Map()
-                modelosFiltrados.forEach(m => unicos.set(m.value, m))
-                this.models = Array.from(unicos.values())
-            } else {
-                this.getModels() // Recarga todos los modelos si se limpia la marca
-            }
+            // no hace falta tocar this.models; ya lo filtra computed
         }
     },
     methods: {
@@ -201,9 +195,9 @@ export default {
                     }
                 })
                 this.vehicles = response.data.items
-                console.log('Respuesta del servidor:', response) // Verifica que la respuesta del servidor sea correcta;
-                this.vehicles = response.data.items
-                console.log('Vehículos obtenidos:', this.vehicles) // Verifica que los vehículos se estén obteniendo correctamente;
+                //console.log('Respuesta del servidor:', response) // Verifica que la respuesta del servidor sea correcta;
+                //this.vehicles = response.data.items
+                //console.log('Vehículos obtenidos:', this.vehicles) // Verifica que los vehículos se estén obteniendo correctamente;
 
             } catch (error) {
                 console.error('Error al obtener los vehículos:', error)
@@ -216,7 +210,7 @@ export default {
         },
         async getModels() {
             const response = await axios.get('/model')
-            this.models = response.data.map(m => ({ label: m.nombre, value: m.id }))
+            this.models = response.data.map(m => ({ label: m.nombre, value: m.id, idBrand: m.idMarca }))
         },
         async getTypesFuel() {
             const response = await axios.get('/typefuel')
