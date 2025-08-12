@@ -31,6 +31,11 @@ const routes: Array<RouteConfig> = [
     name: 'config',
     component: () => import(/* webpackChunkName: "config" */ '../views/ConfigUserDetail.vue')
   },
+  {
+    path: '/changeCompany',
+    name: 'changeCompany',
+    component: () => import(/* webpackChunkName: "changeCompany" */ '../views/ChangeCompanyView.vue')
+  },
 ]
 
 const router = new VueRouter({

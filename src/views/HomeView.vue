@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <app-drawer v-model="drawer" />
-    <app-bar @toggle-drawer="drawer = !drawer" @goToSettings="goTo('config')" @changeCompany="goTo('switch-company')"
+    <app-bar @toggle-drawer="drawer = !drawer" @goToSettings="goTo('config')" @changeCompany="goTo('changeCompany')"
       @logout="logout" />
 
     <v-main>
