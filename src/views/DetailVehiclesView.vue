@@ -4,7 +4,7 @@
         <app-bar @toggle-drawer="drawer = !drawer" @goToSettings="goTo('config')" @changeCompany="goTo('changeCompany')"
             @logout="logout" />
         <v-main>
-            <v-container>
+            <v-container >
                 <dashboard-table />
             </v-container>
         </v-main>

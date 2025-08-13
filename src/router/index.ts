@@ -25,6 +25,10 @@ const routes: Array<RouteConfig> = [
     path: '/vehicles',
     name: 'vehicles',
     component: DetailVehiclesView
+  }, {
+    path: '/models',
+    name: 'models',
+    component: () => import(/* webpackChunkName: "models" */ '../views/DetailModelsView.vue')
   },
   {
     path: '/config',
