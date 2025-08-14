@@ -1,5 +1,5 @@
 <template>
-    <v-dialog v-model="internalValue" max-width="400">
+    <v-dialog v-model="internalValue" max-width="400" persistent>
         <v-card>
             <v-card-title class="headline">{{ title }}</v-card-title>
             <v-card-text>{{ message }}</v-card-text>

@@ -1,125 +1,175 @@
 <template>
     <div>
-        <v-data-table :headers="headers" :items="brands" item-key="id" class="elevation-2 text-center" :search="search"
-            show-expand :expanded.sync="expanded">
-            <template v-slot:top>
-                <v-row class="px-4 pb-4" dense>
-                    <v-col cols="12" sm="9">
-                        <v-text-field v-model="search" label="Buscar por nombre" hide-details clearable />
-                    </v-col>
-                    <v-col cols="12" sm="3" class="d-flex align-center justify-end">
-                        <v-btn color="primary" class="mt-2" @click="fetchAll">
-                            Recargar
-                            <v-icon right>mdi-refresh</v-icon>
+        <app-drawer v-model="drawer" />
+        <app-bar @toggle-drawer="drawer = !drawer" @goToSettings="goTo('config')" @changeCompany="goTo('changeCompany')"
+            @logout="logout" />
+
+        <v-container>
+            <v-data-table :headers="headers" :items="displayedModels" item-key="id"
+                class="mt-16 elevation-2 text-center" :search="search" :custom-filter="filterIgnoreAccents">
+                <template v-slot:top>
+                    <v-row class="px-4 pb-4" dense>
+                        <v-col cols="12" sm="5">
+                            <v-text-field v-model="search" label="Buscar por modelo" hide-details clearable />
+                        </v-col>
+                        <v-col cols="12" sm="4">
+                            <v-select v-model="filters.brandId" :items="brandItems" item-text="label" item-value="value"
+                                label="Filtrar por marca" clearable />
+                        </v-col>
+                        <v-col cols="12" sm="3" class="d-flex align-center justify-end">
+                            <v-btn color="grey" class="mt-2" @click="clearFilters">
+                                Limpiar
+                                <v-icon right>mdi-filter-remove</v-icon>
+                            </v-btn>
+                        </v-col>
+                    </v-row>
+                </template>
+
+                <!-- celdas -->
+                <template v-slot:[`item.id`]="{ item }">
+                    <div class="text-center font-mono">{{ item.id }}</div>
+                </template>
+
+                <template v-slot:[`item.nombre`]="{ item }">
+                    <div class="text-center font-weight-medium">{{ item.nombre || '—' }}</div>
+                </template>
+
+                <template v-slot:[`item.marcaNombre`]="{ item }">
+                    <v-chip small class="ma-1" color="blue lighten-5" text-color="blue darken-2">
+                        {{ item.marcaNombre || '—' }}
+                    </v-chip>
+                </template>
+
+                <!-- acciones -->
+                <template v-slot:[`item.acciones`]="{ item }">
+                    <div class="text-center">
+                        <v-btn icon color="primary" @click="editModel(item)">
+                            <v-icon>edit</v-icon>
                         </v-btn>
-                    </v-col>
-                </v-row>
-            </template>
-
-            <!-- Campos -->
-            <template v-slot:[`item.id`]="{ item }">
-                <div class="text-center font-mono">{{ item.id }}</div>
-            </template>
-
-            <template v-slot:[`item.nombre`]="{ item }">
-                <div class="text-center font-weight-medium">{{ item.nombre || '-' }}</div>
-            </template>
-
-            <template v-slot:[`item.totalModelos`]="{ item }">
-                <v-chip small color="grey lighten-4" class="px-3">
-                    <v-avatar left size="12" class="mr-2" color="grey"></v-avatar>
-                    {{ countModels(item.id) }} modelos
-                </v-chip>
-            </template>
-
-            <!-- Acciones -->
-            <template v-slot:[`item.acciones`]="{ item }">
-                <div class="text-center">
-                    <v-btn icon color="primary" @click="editBrand(item)">
-                        <v-icon>edit</v-icon>
-                    </v-btn>
-                    <v-btn icon color="red" @click="deleteBrand(item)">
-                        <v-icon>delete</v-icon>
-                    </v-btn>
-                </div>
-            </template>
-
-            <!-- Fila expandida: chips de modelos de la marca -->
-            <template v-slot:expanded-item="{ headers, item }">
-                <td :colspan="headers.length" class="text-left px-6 py-4">
-                    <div class="mb-2 grey--text text--darken-1 text-caption">
-                        Modelos de <strong>{{ item.nombre }}</strong>
+                        <v-btn icon color="red" @click="deleteModel(item)">
+                            <v-icon>delete</v-icon>
+                        </v-btn>
                     </div>
-                    <div class="d-flex flex-wrap gap-2">
-                        <v-chip v-for="m in modelsByBrand(item.id)" :key="m.id" class="ma-1" small
-                            color="blue lighten-5" text-color="blue darken-2">
-                            {{ m.nombre }}
-                        </v-chip>
-                        <div v-if="modelsByBrand(item.id).length === 0" class="grey--text text--darken-1">
-                            (Sin modelos)
-                        </div>
-                    </div>
-                </td>
-            </template>
-        </v-data-table>
+                </template>
+            </v-data-table>
 
-        <v-btn depressed color="green" class="mt-4 white--text" @click="createBrand">
-            Añadir marca
-            <v-icon>add</v-icon>
-        </v-btn>
+            <v-btn depressed color="green" class="mt-4 white--text" @click="createModel">
+                Añadir modelo
+                <v-icon>add</v-icon>
+            </v-btn>
+        </v-container>
 
-        <!-- Si ya tienes un formulario de marca, úsalo aquí -->
-        <!-- <brand-form :show="showForm" :brand="selectedBrand" :editMode="isEditMode"
-         @close="showForm = false" @saved="fetchAll" /> -->
+        <BtnGoToHome />
 
-        <confirm-dialog :value="confirmDeleteDialog" :message="`¿Deseas eliminar la marca ${brandToDelete?.nombre}?`"
+        <confirm-dialog :value="confirmDeleteDialog" :message="`¿Deseas eliminar el modelo ${modelToDelete?.nombre}?`"
             title="Confirmar Eliminación" @confirm="confirmDelete" @cancel="cancelDelete" />
+
+        <!-- Formulario de modelo -->
+        <model-form :show="showForm" :editMode="isEditMode" :modelProp="selectedModel" :brands="brands"
+            @close="showForm = false" @saved="fetchAll" />
     </div>
 </template>
 
 <script>
 import axios from '@/utils/axios'
 import ConfirmDialog from '@/components/dialog/ConfirmDialog.vue'
-// import BrandForm from '../forms/BrandForm.vue' // si lo tienes
+import AppDrawer from '@/components/layout/AppDrawer.vue'
+import AppBar from '@/components/layout/AppBar.vue'
+import BtnGoToHome from '@/components/BtnGoToHome.vue'
+import ModelForm from '@/components/forms/ModelForm.vue' // 👈 crea el archivo de abajo
 
 export default {
-    name: 'BrandsView',
+    name: 'ModelsView',
     components: {
         ConfirmDialog,
-        // BrandForm
+        AppDrawer,
+        AppBar,
+        BtnGoToHome,
+        ModelForm,
     },
     data() {
         return {
             search: '',
+            filters: { brandId: null },
             brands: [],
             models: [],
-            expanded: [],
             showForm: false,
-            selectedBrand: null,
+            selectedModel: null,
             isEditMode: false,
             confirmDeleteDialog: false,
-            brandToDelete: null
+            modelToDelete: null,
+            drawer: false,
         }
     },
     computed: {
         headers() {
             return [
                 { text: 'ID', value: 'id', align: 'center', sortable: false },
-                { text: 'Marca', value: 'nombre', align: 'center', sortable: false },
-                { text: 'Modelos', value: 'totalModelos', align: 'center', sortable: false },
-                { text: 'Acciones', value: 'acciones', align: 'center', sortable: false }
+                { text: 'Modelo', value: 'nombre', align: 'center', sortable: false },
+                { text: 'Marca', value: 'marcaNombre', align: 'center', sortable: false },
+                { text: 'Acciones', value: 'acciones', align: 'center', sortable: false },
             ]
-        }
+        },
+        brandMap() {
+            const map = {}
+            this.brands.forEach(b => { map[b.id] = b.nombre })
+            return map
+        },
+        brandItems() {
+            return this.brands.map(b => ({ label: b.nombre, value: b.id }))
+        },
+        modelsWithBrand() {
+            return this.models.map(m => ({
+                ...m,
+                marcaNombre: this.brandMap[m.idMarca] || '',
+            }))
+        },
+        displayedModels() {
+            let arr = this.modelsWithBrand
+            if (this.filters.brandId) {
+                arr = arr.filter(m => Number(m.idMarca) === Number(this.filters.brandId))
+            }
+            if (this.search) {
+                const s = this.normalize(this.search)
+                arr = arr.filter(m =>
+                    this.normalize(m.nombre).includes(s)
+                )
+            }
+            return arr
+        },
     },
     methods: {
+        normalize(s) {
+            return (s || '')
+                .toString()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+        },
+        filterIgnoreAccents(value, search) {
+            if (!search) return true
+            return this.normalize(value).includes(this.normalize(search))
+        },
+        clearFilters() {
+            this.search = ''
+            this.filters.brandId = null
+        },
+        goTo(routeName) {
+            if (this.$route.name !== routeName) {
+                this.$router.push({ name: routeName }).catch(() => { })
+            }
+        },
+        logout() {
+            localStorage.removeItem('accessToken')
+            localStorage.removeItem('token')
+            this.$router.replace({ name: 'login' }).catch(() => { })
+        },
         async fetchBrands() {
             const res = await axios.get('/brand')
-            // DTO: { id, nombre, ... }
             this.brands = Array.isArray(res.data) ? res.data : []
         },
         async fetchModels() {
             const res = await axios.get('/model')
-            // DTO: { id, nombre, idMarca, ... }
             this.models = Array.isArray(res.data) ? res.data : []
         },
         async fetchAll() {
@@ -127,56 +177,47 @@ export default {
                 await Promise.all([this.fetchBrands(), this.fetchModels()])
             } catch (e) {
                 console.error('Error al cargar marcas/modelos:', e)
-                this.$emit('error', 'No se pudieron cargar marcas y modelos.')
+                this.$emit('error', 'No se pudieron cargar modelos o marcas.')
             }
         },
-        modelsByBrand(brandId) {
-            return this.models.filter(m => Number(m.idMarca) === Number(brandId))
-        },
-        countModels(brandId) {
-            return this.modelsByBrand(brandId).length
-        },
-
-        // Acciones (placeholders mínimos)
-        createBrand() {
-            this.selectedBrand = null
+        createModel() {
+            this.selectedModel = null
             this.isEditMode = false
             this.showForm = true
         },
-        editBrand(brand) {
-            this.selectedBrand = brand
+        editModel(model) {
+            this.selectedModel = model
             this.isEditMode = true
             this.showForm = true
         },
-        deleteBrand(brand) {
-            this.brandToDelete = brand
+        deleteModel(model) {
+            this.modelToDelete = model
             this.confirmDeleteDialog = true
         },
         async confirmDelete() {
             try {
-                await axios.delete(`/brand/${this.brandToDelete.id}`)
+                await axios.delete(`/model/${this.modelToDelete.id}`)
                 await this.fetchAll()
             } catch (e) {
-                console.error('Error al eliminar marca:', e)
-                this.$emit('error', 'Error al eliminar la marca.')
+                console.error('Error al eliminar modelo:', e)
+                this.$emit('error', 'Error al eliminar el modelo.')
             } finally {
-                this.brandToDelete = null
+                this.modelToDelete = null
                 this.confirmDeleteDialog = false
             }
         },
         cancelDelete() {
-            this.brandToDelete = null
+            this.modelToDelete = null
             this.confirmDeleteDialog = false
-        }
+        },
     },
     async mounted() {
         await this.fetchAll()
-    }
+    },
 }
 </script>
 
 <style scoped>
-/* ajustar separación visual como en tu otra tabla */
 .v-data-table {
     border-radius: 12px;
 }
