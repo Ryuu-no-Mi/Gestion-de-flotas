@@ -4,9 +4,10 @@
         <app-bar @toggle-drawer="drawer = !drawer" @goToSettings="goTo('config')" @changeCompany="goTo('changeCompany')"
             @logout="logout" />
         <v-main>
-            <v-container >
+            <v-container>
                 <dashboard-table />
             </v-container>
+            <BtnGoToHome />
         </v-main>
     </v-app>
 
@@ -17,6 +18,7 @@ import Vue from 'vue'
 import AppBar from '@/components/layout/AppBar.vue'
 import AppDrawer from '@/components/layout/AppDrawer.vue'
 import DashboardTable from '@/components/dashboard/DashboardTable.vue'
+import BtnGoToHome from '@/components/BtnGoToHome.vue'
 
 
 export default Vue.extend({
@@ -24,7 +26,8 @@ export default Vue.extend({
     components: {
         AppBar,
         AppDrawer,
-        DashboardTable
+        DashboardTable,
+        BtnGoToHome
     },
     data() {
         return {

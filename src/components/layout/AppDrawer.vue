@@ -27,7 +27,7 @@
                 <v-list-item-title>Modelos</v-list-item-title>
             </v-list-item>
 
-            <v-list-item link @click="$router.push({ name: 'fuels' })">
+            <v-list-item link @click="$router.push({ name: 'typefuels' })">
                 <v-list-item-icon><v-icon>mdi-fuel</v-icon></v-list-item-icon>
                 <v-list-item-title>Combustibles</v-list-item-title>
             </v-list-item>
