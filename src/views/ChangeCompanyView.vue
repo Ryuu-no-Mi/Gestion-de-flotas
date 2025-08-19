@@ -51,7 +51,7 @@
                                                 </v-chip>
                                             </template>
                                             <template v-else>
-                                                <v-btn small outlined color="primary" @click="cambiarEmpresa(c)">
+                                                <v-btn small outlined color="primary" @click="changeCompany(c)">
                                                     Usar esta empresa
                                                 </v-btn>
                                             </template>
@@ -131,7 +131,7 @@ export default {
         AppBar,
         AppDrawer,
     },
-    name: 'CambioEmpresa',
+    name: 'ChangeCompanyView',
     data() {
         return {
             loading: false,
@@ -182,18 +182,20 @@ export default {
             }
 
             try {
-                // 1) relaciones usuario–empresa (puede venir 1 o N)
-                const relRes = await axios.get(`/companyuser/user/${idUser}`)
-                const relaciones = Array.isArray(relRes.data) ? relRes.data : [relRes.data]
-                console.log('Relación usuario–empresa:', relaciones)
+                // 1) relacionesData usuario–empresa (puede venir 1 o un array)
+                const RESPONSE = await axios.get(`/companyuser/user/${idUser}`)
+                let relacionesData = Array.isArray(RESPONSE.data) ? RESPONSE.data : [RESPONSE.data]
+                console.log('Relación usuario–empresa:', relacionesData)
 
                 // 2) pide detalles de cada empresa y conserva la relación (para usar su idEmpresa)
                 const pairs = await Promise.all(
-                    relaciones.map(async rel => {
+                    relacionesData.map(async rel => {
                         const dto = await axios.get(`/company/${rel.idEmpresa}`).then(r => r.data)
                         return { rel, dto }
                     })
                 )
+                console.log('Pares de relaciones y detalles de empresas:', pairs);
+
                 const empresasDTO = pairs.map(p => p.dto)
                 console.log('Detalles de empresas:', empresasDTO)
 
@@ -233,7 +235,7 @@ export default {
                 this.loading = false
             }
         },
-        async cambiarEmpresa(empresa) {
+        async changeCompany(empresa) {
             try {
                 console.log('Cambiando empresa a:', empresa);
                 console.log(empresa);
@@ -259,6 +261,9 @@ export default {
             } catch (err) {
                 console.error('Error al cambiar empresa:', err)
             }
+        }, logout() {
+            localStorage.removeItem('token');
+            this.$router.replace({ name: 'login' });
         }
 
     },

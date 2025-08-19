@@ -30,7 +30,7 @@ export default {
         show: Boolean,
         editMode: Boolean,
         modelProp: { type: Object, default: null },
-        brands: { type: Array, default: () => [] }, // para el select de marcas
+        brands: { type: Array, default: () => [] },
     },
     data() {
         return {
@@ -55,10 +55,11 @@ export default {
     },
     methods: {
         async save() {
-            const ok = this.$refs.form.validate()
+            let ok = this.$refs.form.validate()
             if (!ok) return
 
-            if (this.editMode && this.form.id) {
+            console.log('Datos del formulario:', this.form)
+            if (this.editMode) {
                 await axios.put(`/model/${this.form.id}`, {
                     nombre: this.form.nombre,
                     idMarca: this.form.idMarca,

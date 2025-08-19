@@ -5,16 +5,13 @@
             @logout="logout" />
 
         <v-container>
-            <v-data-table :headers="headers" :items="displayedModels" item-key="id"
-                class="mt-16 elevation-2 text-center" :search="search" :custom-filter="filterIgnoreAccents">
+            <v-data-table :headers="headers" :items="typefuels" item-key="id" class="mt-16 elevation-2 text-center"
+                :search="search" :custom-filter="filterIgnoreAccents">
                 <template v-slot:top>
                     <v-row class="px-4 pb-4" dense>
-                        <v-col cols="12" sm="5">
-                            <v-text-field v-model="search" label="Buscar por modelo" hide-details clearable />
-                        </v-col>
-                        <v-col cols="12" sm="4">
-                            <v-select v-model="filters.brandId" :items="brandItems" item-text="label" item-value="value"
-                                label="Filtrar por marca" clearable />
+                        <v-col cols="12" sm="9">
+                            <v-text-field v-model="search" label="Buscar por tipo de combustible" hide-details
+                                clearable />
                         </v-col>
                         <v-col cols="12" sm="3" class="d-flex align-center justify-end">
                             <v-btn color="grey" class="mt-2" @click="clearFilters">
@@ -34,41 +31,35 @@
                     <div class="text-center font-weight-medium">{{ item.nombre || '—' }}</div>
                 </template>
 
-                <template v-slot:[`item.marcaNombre`]="{ item }">
-                    <v-chip small class="ma-1" color="blue lighten-5" text-color="blue darken-2">
-                        {{ item.marcaNombre || '—' }}
-                    </v-chip>
-                </template>
-
-                <!-- acciones -->
                 <template v-slot:[`item.acciones`]="{ item }">
                     <div class="text-center">
-                        <v-btn icon color="primary" @click="editModel(item)">
+                        <v-btn icon color="primary" @click="editTypeFuel(item)">
                             <v-icon>edit</v-icon>
                         </v-btn>
-                        <v-btn icon color="red" @click="deleteModel(item)">
+                        <v-btn icon color="red" @click="deleteTypeFuel(item)">
                             <v-icon>delete</v-icon>
                         </v-btn>
                     </div>
                 </template>
             </v-data-table>
 
-            <v-btn depressed color="green" class="mt-4 white--text" @click="createModel">
-                Añadir modelo
+            <v-btn depressed color="green" class="mt-4 white--text" @click="createTypeFuel">
+                Añadir tipo de combustible
                 <v-icon>add</v-icon>
             </v-btn>
         </v-container>
 
         <BtnGoToHome />
 
-        <confirm-dialog :value="confirmDeleteDialog" :message="`¿Deseas eliminar el modelo ${modelToDelete?.nombre}?`"
+        <confirm-dialog :value="confirmDeleteDialog"
+            :message="`¿Deseas eliminar el tipo de combustible ${typefuelToDelete?.nombre}?`"
             title="Confirmar Eliminación" @confirm="confirmDelete" @cancel="cancelDelete" />
 
-        <!-- Formulario de modelo -->
-        <model-form :show="showForm" :editMode="isEditMode" :modelProp="selectedModel" :brands="brands"
+        <type-fuel-form :show="showForm" :editMode="isEditMode" :typeFuelProp="typefuelSelected"
             @close="showForm = false" @saved="fetchAll" />
     </div>
 </template>
+
 
 <script>
 import axios from '@/utils/axios'
@@ -76,28 +67,26 @@ import ConfirmDialog from '@/components/dialog/ConfirmDialog.vue'
 import AppDrawer from '@/components/layout/AppDrawer.vue'
 import AppBar from '@/components/layout/AppBar.vue'
 import BtnGoToHome from '@/components/BtnGoToHome.vue'
-import ModelForm from '@/components/forms/ModelForm.vue' 
+import TypeFuelForm from '@/components/forms/TypeFuelForm.vue'
 
 export default {
-    name: 'ModelsView',
+    name: 'TypeFuelView',
     components: {
         ConfirmDialog,
         AppDrawer,
         AppBar,
         BtnGoToHome,
-        ModelForm,
+        TypeFuelForm,
     },
     data() {
         return {
             search: '',
-            filters: { brandId: null },
-            brands: [],
-            models: [],
+            typefuels: [],
             showForm: false,
-            selectedModel: null,
+            typefuelSelected: null,
             isEditMode: false,
             confirmDeleteDialog: false,
-            modelToDelete: null,
+            typefuelToDelete: null,
             drawer: false,
         }
     },
@@ -105,37 +94,9 @@ export default {
         headers() {
             return [
                 { text: 'ID', value: 'id', align: 'center', sortable: false },
-                { text: 'Modelo', value: 'nombre', align: 'center', sortable: false },
-                { text: 'Marca', value: 'marcaNombre', align: 'center', sortable: false },
+                { text: 'Nombre', value: 'nombre', align: 'center', sortable: false },
                 { text: 'Acciones', value: 'acciones', align: 'center', sortable: false },
             ]
-        },
-        brandMap() {
-            const map = {}
-            this.brands.forEach(b => { map[b.id] = b.nombre })
-            return map
-        },
-        brandItems() {
-            return this.brands.map(b => ({ label: b.nombre, value: b.id }))
-        },
-        modelsWithBrand() {
-            return this.models.map(m => ({
-                ...m,
-                marcaNombre: this.brandMap[m.idMarca] || '',
-            }))
-        },
-        displayedModels() {
-            let arr = this.modelsWithBrand
-            if (this.filters.brandId) {
-                arr = arr.filter(m => Number(m.idMarca) === Number(this.filters.brandId))
-            }
-            if (this.search) {
-                const s = this.normalize(this.search)
-                arr = arr.filter(m =>
-                    this.normalize(m.nombre).includes(s)
-                )
-            }
-            return arr
         },
     },
     methods: {
@@ -152,7 +113,6 @@ export default {
         },
         clearFilters() {
             this.search = ''
-            this.filters.brandId = null
         },
         goTo(routeName) {
             if (this.$route.name !== routeName) {
@@ -160,54 +120,48 @@ export default {
             }
         },
         logout() {
-            localStorage.removeItem('accessToken')
             localStorage.removeItem('token')
-            this.$router.replace({ name: 'login' }).catch(() => { })
-        },
-        async fetchBrands() {
-            const res = await axios.get('/brand')
-            this.brands = Array.isArray(res.data) ? res.data : []
-        },
-        async fetchModels() {
-            const res = await axios.get('/model')
-            this.models = Array.isArray(res.data) ? res.data : []
+            this.$router.replace({ name: 'login' })
         },
         async fetchAll() {
             try {
-                await Promise.all([this.fetchBrands(), this.fetchModels()])
+                const res = await axios.get('/typefuel')
+                this.typefuels = (Array.isArray(res.data) ? res.data : [])
+                console.log(this.typefuels);
+
             } catch (e) {
-                console.error('Error al cargar marcas/modelos:', e)
-                this.$emit('error', 'No se pudieron cargar modelos o marcas.')
+                console.error('Error al cargar tipos de combustible:', e)
+                this.$emit('error', 'No se pudieron cargar tipos de combustible.')
             }
         },
-        createModel() {
-            this.selectedModel = null
+        createTypeFuel() {
+            this.typefuelSelected = null
             this.isEditMode = false
             this.showForm = true
         },
-        editModel(model) {
-            this.selectedModel = model
+        editTypeFuel(typefuel) {
+            this.typefuelSelected = typefuel
             this.isEditMode = true
             this.showForm = true
         },
-        deleteModel(model) {
-            this.modelToDelete = model
+        deleteTypeFuel(typefuel) {
+            this.typefuelToDelete = typefuel
             this.confirmDeleteDialog = true
         },
         async confirmDelete() {
             try {
-                await axios.delete(`/model/${this.modelToDelete.id}`)
+                await axios.delete(`/typefuel/${this.typefuelToDelete.id}`)
                 await this.fetchAll()
             } catch (e) {
-                console.error('Error al eliminar modelo:', e)
-                this.$emit('error', 'Error al eliminar el modelo.')
+                console.error('Error al eliminar tipo de combustible:', e)
+                this.$emit('error', 'Error al eliminar el tipo de combustible.')
             } finally {
-                this.modelToDelete = null
+                this.typefuelToDelete = null
                 this.confirmDeleteDialog = false
             }
         },
         cancelDelete() {
-            this.modelToDelete = null
+            this.typefuelToDelete = null
             this.confirmDeleteDialog = false
         },
     },

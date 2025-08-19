@@ -35,6 +35,11 @@ const routes: Array<RouteConfig> = [
     component: () => import(/* webpackChunkName: "models" */ '../views/DetailModelsView.vue')
   },
   {
+    path: '/typefuels',
+    name: 'typefuels',
+    component: () => import(/* webpackChunkName: "typefuels" */ '../views/DetailTypeFuelView.vue')
+  },
+  {
     path: '/config',
     name: 'config',
     component: () => import(/* webpackChunkName: "config" */ '../views/ConfigUserDetail.vue')

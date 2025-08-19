@@ -16,7 +16,7 @@
           <dashboard-card title="Marcas" subtitle="Catálogo de marcas de vehículos" icon="mdi-domain" :image="BrandsImg"
             @click="goTo('brands')" />
           <dashboard-card title="Tipos de Combustible" subtitle="Gasolina, diésel, eléctrico, etc." icon="mdi-fuel"
-            :image="FuelsImg" @click="goTo('fuels')" />
+            :image="FuelsImg" @click="goTo('typefuels')" />
         </v-row>
       </v-container>
     </v-main>

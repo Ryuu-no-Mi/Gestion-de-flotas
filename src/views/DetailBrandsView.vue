@@ -155,16 +155,13 @@ export default {
             this.search = ''
         },
         goTo(routeName) {
-            // navega por nombre de ruta; ajusta si usas paths
             if (this.$route.name !== routeName) {
-                this.$router.push({ name: routeName }).catch(() => { })
+                this.$router.push({ name: routeName })
             }
-        },// 👇 Faltaba
+        },
         logout() {
-            // limpia tokens (usa el que realmente guardes)
-            localStorage.removeItem('accessToken')
             localStorage.removeItem('token')
-            this.$router.replace({ name: 'login' }).catch(() => { })
+            this.$router.replace({ name: 'login' });
         },
         async fetchBrands() {
             const res = await axios.get('/brand')

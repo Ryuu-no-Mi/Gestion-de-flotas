@@ -46,15 +46,15 @@
             </template>
 
             <template v-slot:[`item.marca`]="{ item }">
-                <div class="text-center">{{ item.marca || '-' }}</div>
+                <div class="text-center">{{ item.nombreMarca || '-' }}</div>
             </template>
 
             <template v-slot:[`item.modelo`]="{ item }">
-                <div class="text-center">{{ item.modelo || '-' }}</div>
+                <div class="text-center">{{ item.nombreModelo || '-' }}</div>
             </template>
 
             <template v-slot:[`item.tipoCombustible`]="{ item }">
-                <div class="text-center">{{ item.tipoCombustible || '-' }}</div>
+                <div class="text-center">{{ item.nombreTipoCombustible || '-' }}</div>
             </template>
 
             <!-- eslint-disable-next-line vue/valid-v-slot -->
@@ -194,6 +194,8 @@ export default {
                         matricula: this.search
                     }
                 })
+                console.log(response.data) // Verifica que la respuesta del servidor sea correcta;
+
                 this.vehicles = response.data.items
                 //console.log('Respuesta del servidor:', response) // Verifica que la respuesta del servidor sea correcta;
                 //this.vehicles = response.data.items
